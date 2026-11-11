@@ -14,7 +14,11 @@ Queries and retrieved evidence can be sensitive. Existing Hermes/Honcho/model-pr
 
 Do not post credentials, personal data, exported memories, connection strings or exploitable vulnerability details in a public issue. Ordinary bug reports should use synthetic examples and sanitized version/error metadata.
 
-**Publication gate:** maintainers must configure GitHub private vulnerability reporting or publish an approved private contact before making this candidate public. No private reporting channel is claimed to exist yet.
+For a suspected vulnerability, use this repository's [Security → Advisories](https://github.com/Sploogle-AI/hermes-plugin-sploogle-shared-reasoning/security/advisories) page and choose **Report a vulnerability** to report privately.
+
+Private vulnerability reporting must be enabled by the maintainers as part of public release. If that option is unavailable, do not publish vulnerability details: a public issue may request a private reporting channel, but must not contain exploit steps, credentials, personal data or unredacted logs.
+
+Include the affected versions, expected versus observed behavior, and a minimal synthetic reproduction where possible. Reports are assessed on a best-effort basis; no response deadline, bounty or support contract is promised.
 
 ## Release hygiene
 

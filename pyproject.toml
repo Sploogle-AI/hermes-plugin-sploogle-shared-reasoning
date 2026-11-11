@@ -1,0 +1,10 @@
+[project]
+name = "hermes-plugin-sploogle-shared-reasoning"
+version = "0.1.0"
+license = "MIT"
+description = "Explicit, evidence-returning human-self reasoning for Hermes Honcho"
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.28,<1"]
+
+[tool.uv]
+package = false

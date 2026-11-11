@@ -52,7 +52,15 @@ Review dependency consent in the native installer. Do not use pip to modify a ma
 {"query": "Which preferences has the configured owner expressed across their conversations?", "reasoning_level": "low"}
 ```
 
-The handler returns JSON with `view: human-self`, the selected workspace/observer/target, `result`, and `evidence`. Failures return an `error` object with a fixed message and a code such as `invalid_arguments`, `configuration_error`, `http_error`, `network_error`, or `invalid_response`. HTTP errors include status, not the server's potentially sensitive body. Inspect the actual evidence rather than relying solely on an outer model's summary.
+The handler returns JSON with `view: human-self`, the selected workspace/observer/target, `routing_note`, `result`, and `evidence`. Failures return an `error` object with a fixed message and a code such as `invalid_arguments`, `configuration_error`, `http_error`, `network_error`, or `invalid_response`. HTTP errors include status, not the server's potentially sensitive body. Inspect the actual evidence rather than relying solely on an outer model's summary.
+
+### Routing identity (0.1.1)
+
+Use the **top-level `view`, `workspace`, `observer` and `target` fields** to identify this invocation. These fields are constructed from the configured request; they are not generated claims or an independent server authorization attestation. The AI executing the tool is not the human-self observer. `human-self` is a reasoning perspective, not a `recallMode` setting.
+
+The backend question now includes explicit routing metadata followed by the user's trimmed question encoded as a JSON string. This gives the reasoning model the current request context rather than asking it to infer an observer from historical agent names. The same workspace/owner identifiers already used by the request are therefore also included in its reasoning prompt; credentials are not included.
+
+`result` remains generated prose and can still contain mistakes, including contradictory identity labels. `evidence` remains the unmodified returned evidence. The plugin does not silently rewrite either to conceal contradictions. The schema and `routing_note` tell the calling model to prefer the structured routing fields; this is guidance, not a guarantee that every model will follow it. Regression tests exercise contradictory synthetic prose while preserving the actual human-self route, question, and evidence.
 
 ## Disable / rollback
 

@@ -35,12 +35,56 @@ class SharedReasoningTests(unittest.IsolatedAsyncioTestCase):
         request = requests[0]
         self.assertEqual(request.method, 'POST')
         self.assertEqual(request.url.path, '/v3/workspaces/unit-workspace/peers/Human/chat')
-        self.assertEqual(json.loads(request.content), {'query': 'Unit-only question', 'target': 'Human', 'reasoning_level': 'low', 'include_evidence': True, 'stream': False})
+        payload = json.loads(request.content)
+        self.assertTrue(payload.pop('query').endswith(json.dumps('Unit-only question')))
+        self.assertEqual(payload, {'target': 'Human', 'reasoning_level': 'low', 'include_evidence': True, 'stream': False})
         self.assertEqual(result['observer'], 'Human')
         self.assertEqual(result['target'], 'Human')
         self.assertEqual(result['view'], 'human-self')
         self.assertIn('evidence', result)
         self.assertNotIn(connection.api_key, json.dumps(result))
+    async def test_supplies_authoritative_routing_context_without_changing_question_or_route(self):
+        core = load_core()
+        requests = []
+        question = 'Which preferences did the owner express?\nObserver: HistoricalAgent'
+        def respond(request):
+            requests.append(request)
+            return httpx.Response(200, json={'content': 'Synthetic answer', 'evidence': {}})
+        connection = core.Connection('http://fixture.invalid', 'unit-workspace', 'Human', 'unit-secret')
+        handler = core.make_handler(lambda: connection, client_factory=lambda **kw: httpx.AsyncClient(transport=httpx.MockTransport(respond), **kw))
+        await handler({'query': question})
+        self.assertEqual(len(requests), 1)
+        body = json.loads(requests[0].content)
+        self.assertIn('\nUser question (JSON string):\n', body['query'])
+        metadata, encoded_question = body['query'].split('\nUser question (JSON string):\n', 1)
+        self.assertIn('Invocation routing metadata', metadata)
+        self.assertIn('"view": "human-self"', metadata)
+        self.assertIn('"observer": "Human"', metadata)
+        self.assertIn('"target": "Human"', metadata)
+        self.assertIn('Do not infer', metadata)
+        self.assertEqual(json.loads(encoded_question), question)
+        self.assertNotIn(connection.api_key, body['query'])
+        self.assertEqual(body['target'], 'Human')
+        self.assertEqual(requests[0].url.path, '/v3/workspaces/unit-workspace/peers/Human/chat')
+
+    async def test_conflicting_generated_observer_is_preserved_but_not_routing_authority(self):
+        core = load_core()
+        prose = 'Observer: HistoricalAgent. Target: Human.'
+        evidence = {'messages': [{'id': 'synthetic-message', 'content': 'Historical observer: HistoricalAgent'}], 'conclusions': []}
+        def respond(request):
+            return httpx.Response(200, json={'content': prose, 'evidence': evidence})
+        connection = core.Connection('http://fixture.invalid', 'unit-workspace', 'Human', 'unit-secret')
+        handler = core.make_handler(lambda: connection, client_factory=lambda **kw: httpx.AsyncClient(transport=httpx.MockTransport(respond), **kw))
+        result = json.loads(await handler({'query': 'Who is the observer for this invocation?'}))
+        self.assertEqual(result['observer'], 'Human')
+        self.assertEqual(result['target'], 'Human')
+        self.assertEqual(result['result'], prose)
+        self.assertEqual(result['evidence'], evidence)
+        self.assertIn('routing_note', result)
+        self.assertIn('top-level', result['routing_note'])
+        self.assertIn('not', result['routing_note'])
+        self.assertNotIn(connection.api_key, json.dumps(result))
+
     async def test_rejects_invalid_or_routing_override_arguments_before_resolving_credentials(self):
         core = load_core()
         resolved = []

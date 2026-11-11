@@ -1,5 +1,5 @@
 name: sploogle-shared-reasoning
-version: 0.1.0
+version: 0.1.1
 author: Sploogle AI LLC
 description: Explicit human-self Honcho reasoning with retrieval evidence; no ingestion or native-tool overrides.
 provides_tools:

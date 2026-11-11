@@ -32,6 +32,10 @@ class RegistrationTests(unittest.TestCase):
         self.assertEqual(set(tool['schema']['parameters']['properties']), {'query', 'reasoning_level'})
         self.assertFalse(tool['schema']['parameters']['additionalProperties'])
         self.assertEqual(tool['schema']['parameters']['required'], ['query'])
+        description = tool['schema']['description']
+        self.assertIn('top-level', description)
+        self.assertIn('generated', description)
+        self.assertIn('recallMode', description)
         self.assertNotIn('sploogle_test_plugin.adapter', sys.modules)
 
 
